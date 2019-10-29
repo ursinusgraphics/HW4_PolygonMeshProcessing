@@ -6,7 +6,7 @@
  */
 function HalfEdgeCanvas(glcanvas, shadersrelpath) {
     BaseCanvas(glcanvas, shadersrelpath);
-    glcanvas.mesh = new BasicMesh();
+    glcanvas.mesh = new HedgeMesh();
     glcanvas.camera = new MousePolarCamera(glcanvas.width, glcanvas.height);
 
 

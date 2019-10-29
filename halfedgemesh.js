@@ -2,12 +2,37 @@
  * Skeleton code implementation for a half-edge mesh
  */
 
+let vec3 = glMatrix.vec3;
 
 function HEdge() {
     this.head = null; // Head vertex
     this.face = null; // Left face
     this.pair = null; // Half edge on opposite face
     this.next = null; // Next half edge in CCW order around left face
+
+    /**
+     * Return a list of the two vertices attached to this edge,
+     * or an empty list if one of them has not yet been initialized
+     */
+    this.getVertices = function() {
+        let ret = [];
+        // Since each edge points to its head and since
+        // there is no prev pointer, we have to walk around
+        // the face until we get to the edge before this edge
+        // (but this is still constant amortized time)
+        if (!(this.head === null)) {
+            let edge = this.next;
+            while (!(edge === null) && !(edge == this)) {
+                if (edge.next == this) {
+                    // We've completed the loop and we now know
+                    // what the vertices are
+                    ret = [edge.head, this.head];
+                }
+                edge = edge.next;
+            }
+        }
+        return ret;
+    }
 }
 
 function HFace() {
@@ -17,6 +42,9 @@ function HFace() {
      * Get a list of vertices attached to this face
      */
     this.getVertices = function() {
+        if (this.h === null) {
+            return [];
+        }
         let h = this.h.next;
         let vertices = [this.h.head];
         while (h != this.h) {
@@ -26,20 +54,20 @@ function HFace() {
         return vertices;
     }
 
-    this.getNormal = function () {
+    this.getNormal = function() {
         // TODO: Fill this in
-        return glMatrix.vec3.create();
+        return vec3.create();
     }
 }
 
 function HVertex(pos, color) {
     this.pos = pos;
     this.color = color;
-    this.h = null;
+    this.h = null; // Any hedge on this vertex
 
-    this.getNormal = function () {
+    this.getNormal = function() {
         // TODO: Fill this in
-        return glMatrix.vec3.create();
+        return vec3.fromValues(1, 0, 0);
     }
 }
 
@@ -51,41 +79,44 @@ function HedgeMesh() {
      * @returns {I} A NumTrisx3 Uint16Array of indices into the vertex array
      */
     this.getTriangleIndices = function() {
-        // TODO: Fill this in for rendering
-        /*let NumTris = 0;
+        let NumTris = 0;
+        let allvs = [];
         for (let i = 0; i < this.faces.length; i++) {
-            NumTris += this.faces[i].edges.length - 2;
+            let vsi = this.faces[i].getVertices();
+            allvs.push(vsi.map(function(v){
+                return v.ID;
+            }));
+            NumTris += vsi.length - 2;
         }
         let I = new Uint16Array(NumTris*3);
         let i = 0;
         let faceIdx = 0;
         //Now copy over the triangle indices
         while (i < NumTris) {
-            let verts = this.faces[faceIdx].getVertices();
+            let verts = allvs[faceIdx]
             for (let t = 0; t < verts.length - 2; t++) {
-                I[i*3] = verts[0].ID;
-                I[i*3+1] = verts[t+1].ID;
-                I[i*3+2] = verts[t+2].ID;
+                I[i*3] = verts[0];
+                I[i*3+1] = verts[t+1];
+                I[i*3+2] = verts[t+2];
                 i++;
             }
             faceIdx++;
         }
-        return I;*/
+        return I;
     }
 
     /**
      * @returns {I} A NEdgesx2 Uint16Array of indices into the vertex array
      */
     this.getEdgeIndices = function() {
-        // TODO: Fill this in for rendering
-        /*
-        let NumEdges = this.edges.length;
-        let I = new Uint16Array(NumEdges*2);
-        for (let i = 0; i < NumEdges; i++) {
-            I[i*2] = this.edges[i].v1.ID;
-            I[i*2+1] = this.edges[i].v2.ID;
+        let I = [];
+        for (let i = 0; i < this.edges.length; i++) {
+            let vs = this.edges[i].getVertices();
+            for (let k = 0; k < vs.length; k++) {
+                I.push(vs[k].ID);
+            }
         }
-        return I;*/
+        return new Uint16Array(I);
     }
 
     /**
@@ -101,7 +132,7 @@ function HedgeMesh() {
      */
     this.addHalfEdge = function(v1, v2, face) {
         const hedge = new HEdge();
-        hedge.vertex = v2; // Points to head vertex of edge
+        hedge.head = v2; // Points to head vertex of edge
         hedge.face = face;
         v1.h = hedge; // Let tail vertex point to this edge
         this.edges.push(hedge);
@@ -119,12 +150,28 @@ function HedgeMesh() {
      * in CCW order
      */
     this.loadFileFromLines = function(lines) {
-        let res = loadFileFromLines(lines);
-        this.vertices.length = 0;
-        this.edges.length = 0;
-        this.faces.length = 0;
+        // Step 1: Consistently orient faces using
+        // the basic mesh structure and copy over the result
+        const origMesh = new BasicMesh();
+        origMesh.loadFileFromLines(lines);
+        origMesh.consistentlyOrientFaces();
+        const res = {'vertices':[], 'colors':[], 'faces':[]};
+        for (let i = 0; i < origMesh.vertices.length; i++) {
+            res['vertices'].push(origMesh.vertices[i].pos);
+            res['colors'].push(origMesh.vertices[i].color);
+        }
+        for (let i = 0; i < origMesh.faces.length; i++) {
+            // These faces should now be consistently oriented
+            const vs = origMesh.faces[i].getVertices();
+            res['faces'].push(vs.map(
+                function(v) {
+                    return v.ID;
+                }
+            ));
+        }
 
-        // Step 1: Add vertices
+        // Step 2: Add vertices
+        this.vertices.length = 0; // Reset list
         for (let i = 0; i < res['vertices'].length; i++) {
             let V = new HVertex(res['vertices'][i], res['colors'][i]);
             V.ID = this.vertices.length;
@@ -132,14 +179,16 @@ function HedgeMesh() {
         }
 
         let str2Hedge = {};
-
-        // Step 2: Add faces and halfedges
+        // Step 3: Add faces and halfedges
+        this.edges.length = 0;
+        this.faces.length = 0;
         for (let i = 0; i < res['faces'].length; i++) {
             const face = new HFace();
             this.faces.push(face);
-            let vertsi = res['faces'].map(function(v) {
-                this.vertices[v];
-            });
+            let vertsi = [];
+            for (let k = 0; k < res['faces'][i].length; k++) {
+                vertsi.push(this.vertices[res['faces'][i][k]]);
+            }
 
             // Add halfedges
             for (let k = 0; k < vertsi.length; k++) {
@@ -154,21 +203,27 @@ function HedgeMesh() {
 
             // Link edges together around face in CCW order
             // assuming each vertex points to the half edge
-            // starting at that vertex (which addHalfEdge has done)
+            // starting at that vertex for this face 
+            // (which addHalfEdge has just done)
             for (let k = 0; k < vertsi.length; k++) {
                 vertsi[k].h.next = vertsi[(k+1)%vertsi.length].h;
             }
         }
 
-        // Step 3: Add links between opposite half edges if 
+        // Step 4: Add links between opposite half edges if 
         // they exist (otherwise, there is a boundary edge)
         for (const key in str2Hedge) {
             const v1v2 = key.split("_");
             const other = v1v2[1]+"_"+v1v2[0];
             if (other in str2Hedge) {
-                str2Hedge[key].opposite = str2Hedge[other];
+                str2Hedge[key].pair = str2Hedge[other];
             }
         }
+
+        console.log("Initialized half edge mesh with " + 
+                    this.vertices.length + " vertices, " + 
+                    this.edges.length + " half edges, " + 
+                    this.faces.length + " faces");
 
         this.needsDisplayUpdate = true;
     }
