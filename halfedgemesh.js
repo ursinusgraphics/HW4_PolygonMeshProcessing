@@ -8,6 +8,7 @@ function HEdge() {
     this.head = null; // Head vertex
     this.face = null; // Left face
     this.pair = null; // Half edge on opposite face
+    this.prev = null; // Previous half edge in CCW order around left face
     this.next = null; // Next half edge in CCW order around left face
 
     /**
@@ -16,19 +17,9 @@ function HEdge() {
      */
     this.getVertices = function() {
         let ret = [];
-        // Since each edge points to its head and since
-        // there is no prev pointer, we have to walk around
-        // the face until we get to the edge before this edge
-        // (but this is still constant amortized time)
-        if (!(this.head === null)) {
-            let edge = this.next;
-            while (!(edge === null) && !(edge == this)) {
-                if (edge.next == this) {
-                    // We've completed the loop and we now know
-                    // what the vertices are
-                    ret = [edge.head, this.head];
-                }
-                edge = edge.next;
+        if (!(this.head === null) && !(this.prev === null)) {
+            if (!(this.prev.head === null)) {
+                ret = [this.head, this.prev.head];
             }
         }
         return ret;
@@ -37,6 +28,16 @@ function HEdge() {
 
 function HFace() {
     this.h = null; // Any HEdge on this face
+
+    /**
+     * Get a list of half-edges involved with this face
+     */
+    this.getEdges = function() {
+        if (this.h === null) {
+            return [];
+        }
+        // TODO: Fill this in
+    }
 
     /**
      * Get a list of vertices attached to this face
@@ -68,6 +69,13 @@ function HVertex(pos, color) {
     this.getNormal = function() {
         // TODO: Fill this in
         return vec3.fromValues(1, 0, 0);
+    }
+
+    this.getVertexNeighbors = function() {
+        if (this.h === null) {
+            return [];
+        }
+        // TODO: Fill this in (a do while loop works well)
     }
 }
 
@@ -197,26 +205,48 @@ function HedgeMesh() {
                 // Add each half edge
                 const hedge = this.addHalfEdge(v1, v2, face);
                 // Store half edge in hash table
-                str2Hedge[v1.ID+"_"+v2.ID] = hedge;
+                let key = v1.ID+"_"+v2.ID;
+                str2Hedge[key] = hedge;
                 face.h = hedge;
             }
 
             // Link edges together around face in CCW order
             // assuming each vertex points to the half edge
-            // starting at that vertex for this face 
+            // starting at that vertex
             // (which addHalfEdge has just done)
             for (let k = 0; k < vertsi.length; k++) {
                 vertsi[k].h.next = vertsi[(k+1)%vertsi.length].h;
+                vertsi[(k+1)%vertsi.length].h.prev = vertsi[k].h;
             }
         }
 
         // Step 4: Add links between opposite half edges if 
-        // they exist (otherwise, there is a boundary edge)
+        // they exist.  Otherwise, it is a boundary edge, so
+        // add a half edge with a null face on the other side
+        let boundaryEdges = {}; // Index boundary edges by their tail
         for (const key in str2Hedge) {
             const v1v2 = key.split("_");
+            let h1 = str2Hedge[key];
             const other = v1v2[1]+"_"+v1v2[0];
             if (other in str2Hedge) {
-                str2Hedge[key].pair = str2Hedge[other];
+                h1.pair = str2Hedge[other];
+            }
+            else {
+                let h2 = new HEdge();
+                h1.pair = h2;
+                h2.pair = h1;
+                h2.head = this.vertices[v1v2[0]];
+                boundaryEdges[v1v2[1]] = h2;
+            }
+        }
+
+        // Step 5: Link boundary edges
+        for (key in boundaryEdges) {
+            let e = boundaryEdges[key];
+            if (e.next === null) {
+                let e2 = boundaryEdges[e.head.ID];
+                e.next = e2;
+                e2.prev = e;
             }
         }
 
