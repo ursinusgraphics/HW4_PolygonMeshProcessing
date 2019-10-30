@@ -4,15 +4,23 @@
  * @param {string} shadersrelpath Path to the folder that contains the shaders,
  *                                relative to where the constructor is being called
  */
+
+DRAW_OFFSET = 1.001; // Draw points at a slight multiplicative offset for debugging
+
 function HalfEdgeCanvas(glcanvas, shadersrelpath) {
     BaseCanvas(glcanvas, shadersrelpath);
     glcanvas.mesh = new HedgeMesh();
     glcanvas.camera = new MousePolarCamera(glcanvas.width, glcanvas.height);
     glcanvas.drawer = new SimpleDrawer(glcanvas.gl, glcanvas.shaders);
+    glcanvas.faceDrawer = new BasicMesh();
 
     /////////////////////////////////////////////////////
     //Step 1: Setup repaint function
     /////////////////////////////////////////////////////    
+
+    /**
+     * Code for drawing the mesh and debugging information
+     */
     glcanvas.repaint = function() {
         glcanvas.gl.viewport(0, 0, glcanvas.gl.viewportWidth, glcanvas.gl.viewportHeight);
         glcanvas.gl.clear(glcanvas.gl.COLOR_BUFFER_BIT | glcanvas.gl.DEPTH_BUFFER_BIT);
@@ -25,17 +33,101 @@ function HalfEdgeCanvas(glcanvas, shadersrelpath) {
 
         let drawer = glcanvas.drawer;
         drawer.reset();
+        // Code for showing result of vertex-related traversals
         if (glcanvas.vertTest.showResult) {
             let v = glcanvas.mesh.vertices[glcanvas.vertTest.vertexIndex];
-            drawer.drawPoint(v.pos, [1, 0, 0]);
-            if (glcanvas.vertTest.type == 'getVertexNeighbors') {
+            let p1 = glMatrix.vec3.create();
+            let p1_2 = glMatrix.vec3.create();
+            glMatrix.vec3.scale(p1, v.pos, DRAW_OFFSET);
+            glMatrix.vec3.scale(p1_2, v.pos, 1.0/DRAW_OFFSET);
+            drawer.drawPoint(p1, [1, 0, 0]);
+            if (glcanvas.vertTest.type == 'getVertexNeighbors' || glcanvas.vertTest.type == 'getAttachedFaces') {
                 let vs = v.getVertexNeighbors();
                 for (let i = 0; i < vs.length; i++) {
-                    drawer.drawLine(v.pos, vs[i].pos, [0, 1, 1]);
-                    drawer.drawPoint(vs[i].pos, [0, 1, 1]);
+                    let p2 = glMatrix.vec3.create();
+                    let p2_2 = glMatrix.vec3.create();
+                    glMatrix.vec3.scale(p2, vs[i].pos, DRAW_OFFSET);
+                    glMatrix.vec3.scale(p2_2, vs[i].pos, 1.0/DRAW_OFFSET);
+                    drawer.drawLine(p1, p2, [0, 1, 1]);
+                    drawer.drawPoint(p2, [0, 1, 1]);
+                    drawer.drawLine(p1_2, p2_2, [0, 1, 1]);
+                    drawer.drawPoint(p2_2, [0, 1, 1]);
                 }
             }
+            if (glcanvas.vertTest.type == 'getAttachedFaces') {
+                // Draw all attached faces in red
+                let faces = v.getAttachedFaces();
+                glcanvas.faceDrawer.clear();
+                let idx2V = {}; // Convert from mesh index to new vertex in face drawer
+                for (let i = 0; i < faces.length; i++) {
+                    const f = faces[i];
+                    const vs = f.getVertices();
+                    let face = [];
+                    let face_2 = [];
+                    for (let j = 0; j < vs.length; j++) {
+                        const v = vs[j];
+                        if (!(v.ID in idx2V)) {
+                            let p = glMatrix.vec3.create();
+                            let p_2 = glMatrix.vec3.create();
+                            glMatrix.vec3.scale(p, v.pos, DRAW_OFFSET);
+                            glMatrix.vec3.scale(p_2, v.pos, 1.0/DRAW_OFFSET);
+                            const vnew = glcanvas.faceDrawer.addVertex(p);
+                            const vnew_2 = glcanvas.faceDrawer.addVertex(p_2);
+                            idx2V[v.ID] = [vnew, vnew_2];
+                        }
+                        face.push(idx2V[v.ID][0]);
+                        face_2.push(idx2V[v.ID][1])
+                    }
+                    glcanvas.faceDrawer.addFace(face);
+                    glcanvas.faceDrawer.addFace(face_2);
+                }
+                let materialBefore = glcanvas.material;
+                glcanvas.material = {'ka':[1, 1, 0], 'kd':[1, 1, 0]};
+                glcanvas.faceDrawer.render(glcanvas);
+                glcanvas.material = materialBefore;
+            }
         }
+
+        // Code for showing result of face-related traversals
+        function drawEdge(edge, color) {
+            if (color === undefined) {
+                color = [1, 0, 1];
+            }
+            let vs = edge.getVertices();
+            for (let k = 0; k < 2; k++) {
+                if (k == 0) {
+                    offset = DRAW_OFFSET;
+                }
+                else {
+                    offset = 1.0/DRAW_OFFSET;
+                }
+                let p1 = glMatrix.vec3.create();
+                let p2 = glMatrix.vec3.create();
+                glMatrix.vec3.scale(p1, vs[0].pos, DRAW_OFFSET);
+                glMatrix.vec3.scale(p2, vs[1].pos, DRAW_OFFSET);
+                drawer.drawLine(p1, p2, color);
+            }
+        }
+
+        if (glcanvas.faceTest.showResult) {
+            let face = glcanvas.mesh.faces[glcanvas.faceTest.faceIndex];
+            let edges = face.getEdges();
+            for (let i = 0; i < edges.length; i++) {
+                drawEdge(edges[i]);
+            }
+        }
+
+        // Code for showing boundary cycles
+        if (glcanvas.showBoundaries) {
+            let cycles = glcanvas.mesh.getBoundaryCycles();
+            for (let i = 0; i < cycles.length; i++) {
+                for (let j = 0; j < cycles[i].length; j++) {
+                    drawEdge(cycles[i][j], [0, 0.5, 1]);
+                }
+            }
+            glcanvas.genus = glcanvas.mesh.getGenus();
+        }
+
         drawer.repaint(glcanvas.camera);
     }
 
@@ -78,8 +170,49 @@ function HalfEdgeCanvas(glcanvas, shadersrelpath) {
         }
         requestAnimFrame(glcanvas.repaint);
     });
-    vertTests.add(glcanvas.vertTest, 'type', ['getVertexNeighbors']).onChange(simpleRepaint);
+    vertTests.add(glcanvas.vertTest, 'type', ['getVertexNeighbors', 'getAttachedFaces']).onChange(simpleRepaint);
     vertTests.add(glcanvas.vertTest, 'showResult').onChange(simpleRepaint);
+
+    let faceTests = travTests.addFolder('Face Tests');
+    glcanvas.faceTest = {'faceIndex':0, 'showResult':false, 'type':'getEdges'};
+    glcanvas.faceTest.gui = faceTests;
+    faceTests.add(glcanvas.faceTest, 'faceIndex').onChange(function(i) {
+        let maxi = glcanvas.mesh.faces.length-1;
+        if (i >= maxi) {
+            glcanvas.faceTest.faceIndex = maxi;
+        }
+        if (i < 0) {
+            glcanvas.faceTest.faceIndex = 0;
+        }
+        requestAnimFrame(glcanvas.repaint);
+    });
+    faceTests.add(glcanvas.faceTest, 'type', ['getEdges']).onChange(simpleRepaint);
+    faceTests.add(glcanvas.faceTest, 'showResult').onChange(simpleRepaint);
+
+    let geomMenu = gui.addFolder("Geometric Tasks");
+    glcanvas.inflationFac = 0.1;
+    function doInflateDeflate() {
+        glcanvas.mesh.inflateDeflate(glcanvas.inflationFac);
+        requestAnimFrame(glcanvas.repaint);
+    }
+    glcanvas.laplacianSmooth = function() {
+        glcanvas.mesh.laplacianSmoothSharpen(true);
+        requestAnimFrame(glcanvas.repaint);
+    }
+    glcanvas.laplacianSharpen = function() {
+        glcanvas.mesh.laplacianSmoothSharpen(false);
+        requestAnimFrame(glcanvas.repaint);
+    }
+    geomMenu.add(glcanvas, 'inflationFac', -1, 1);
+    geomMenu.add(glcanvas.mesh, 'inflateDeflate').onChange(doInflateDeflate);
+    geomMenu.add(glcanvas, 'laplacianSmooth');
+    geomMenu.add(glcanvas, 'laplacianSharpen');
+
+    let topoMenu = gui.addFolder("Topological Tasks");
+    glcanvas.showBoundaries = false;
+    glcanvas.genus = -1;
+    topoMenu.add(glcanvas, 'showBoundaries').onChange(simpleRepaint);
+    topoMenu.add(glcanvas, 'genus').listen();
 
     gui.add(glcanvas.mesh, 'saveOffFile').onChange(simpleRepaint);
 

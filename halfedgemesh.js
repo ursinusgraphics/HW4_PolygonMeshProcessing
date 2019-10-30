@@ -14,6 +14,9 @@ function HEdge() {
     /**
      * Return a list of the two vertices attached to this edge,
      * or an empty list if one of them has not yet been initialized
+     * 
+     * @returns {list} A 2-element list of HVertex objects corresponding
+     *                  to vertices attached to this edge
      */
     this.getVertices = function() {
         let ret = [];
@@ -31,16 +34,24 @@ function HFace() {
 
     /**
      * Get a list of half-edges involved with this face
+     * 
+     * @returns {list} A list of HEdge objects corresponding
+     *                 to edges at the boundary of this face
      */
     this.getEdges = function() {
         if (this.h === null) {
             return [];
         }
         // TODO: Fill this in
+
+        return edges;
     }
 
     /**
      * Get a list of vertices attached to this face
+     * 
+     * @returns {list} A list of HVertex objects corresponding
+     *                 to vertices on this face
      */
     this.getVertices = function() {
         if (this.h === null) {
@@ -55,9 +66,29 @@ function HFace() {
         return vertices;
     }
 
+    /**
+     * Compute the area of this face
+     * 
+     * @returns {float} The area of this face
+     */
+    this.getArea = function() {
+        let area = 0.0;
+        // TODO: Fill this in (you can use mini assignment 1 to help)
+        // Remember, there are n-2 triangles in an n-gon
+
+        return area;
+    }
+
+    /**
+     * Get the normal of this face, assuming it is flat
+     * 
+     * @returns {vec3} The normal of this face
+     */
     this.getNormal = function() {
+        let normal = vec3.create();
         // TODO: Fill this in
-        return vec3.create();
+
+        return normal;
     }
 }
 
@@ -66,16 +97,48 @@ function HVertex(pos, color) {
     this.color = color;
     this.h = null; // Any hedge on this vertex
 
-    this.getNormal = function() {
-        // TODO: Fill this in
-        return vec3.fromValues(1, 0, 0);
-    }
-
+    /**
+     * Compute the vertices that are attached to this
+     * vertex by an edge
+     * 
+     * @returns {list} List of HVertex objects corresponding
+     *                 to the attached vertices
+     */
     this.getVertexNeighbors = function() {
         if (this.h === null) {
             return [];
         }
         // TODO: Fill this in (a do while loop works well)
+        return [];
+    }
+
+    /**
+     * Compute the faces of which this vertex is a member
+     * 
+     * @returns {list} A list of HFace objects corresponding
+     *                  to the incident faces
+     */
+    this.getAttachedFaces = function() {
+        if (this.h === null) {
+            return [];
+        }
+        // TODO: Fill this in (this is very similar to getVertexNeighbors)
+
+        return [];
+    }
+
+    /**
+     * Compute the normal of this vertex as an area-weighted
+     * average of the normals of the faces attached to this vertex
+     * 
+     * @returns {float} The estimated normal
+     */
+    this.getNormal = function() {
+        let normal = vec3.fromValues(1, 0, 0); // TODO: This is a dummy value
+        // TODO: Fill this in 
+        // Hint: use this.getAttachedFaces(), face.getArea(), and face.getNormal() to help
+
+        return normal;
     }
 }
 
@@ -163,6 +226,7 @@ function HedgeMesh() {
         const origMesh = new BasicMesh();
         origMesh.loadFileFromLines(lines);
         origMesh.consistentlyOrientFaces();
+        origMesh.subtractCentroid();
         const res = {'vertices':[], 'colors':[], 'faces':[]};
         for (let i = 0; i < origMesh.vertices.length; i++) {
             res['vertices'].push(origMesh.vertices[i].pos);
@@ -178,8 +242,12 @@ function HedgeMesh() {
             ));
         }
 
+        // Step 1.5: Clear previous mesh
+        this.vertices.length = 0;
+        this.edges.length = 0;
+        this.faces.length = 0;
+
         // Step 2: Add vertices
-        this.vertices.length = 0; // Reset list
         for (let i = 0; i < res['vertices'].length; i++) {
             let V = new HVertex(res['vertices'][i], res['colors'][i]);
             V.ID = this.vertices.length;
@@ -188,8 +256,6 @@ function HedgeMesh() {
 
         let str2Hedge = {};
         // Step 3: Add faces and halfedges
-        this.edges.length = 0;
-        this.faces.length = 0;
         for (let i = 0; i < res['faces'].length; i++) {
             const face = new HFace();
             this.faces.push(face);
@@ -237,6 +303,7 @@ function HedgeMesh() {
                 h2.pair = h1;
                 h2.head = this.vertices[v1v2[0]];
                 boundaryEdges[v1v2[1]] = h2;
+                this.edges.push(h2);
             }
         }
 
@@ -254,6 +321,92 @@ function HedgeMesh() {
                     this.vertices.length + " vertices, " + 
                     this.edges.length + " half edges, " + 
                     this.faces.length + " faces");
+
+        this.needsDisplayUpdate = true;
+    }
+
+
+    /////////////////////////////////////////////////////////////
+    ////                  GEOMETRIC TASKS                   /////
+    /////////////////////////////////////////////////////////////
+    
+    /**
+     * Move each vertex along its normal by a factor
+     * 
+     * @param {float} fac Move each vertex position by this
+     *                    factor of its normal.
+     *                    If positive, the mesh will inflate.
+     *                    If negative, the mesh will deflate.
+     */
+    this.inflateDeflate = function(fac) {
+        if (fac === undefined) { 
+            // Keep this here for some GUI weirdness
+            return;
+        }
+        // TODO: Fill this in
+
+        this.needsDisplayUpdate = true;
+    }
+
+    /**
+     * Compute the mean vector from all of this vertex's neighbors
+     * to the vertex.  If smoothing, subtract this vector off.
+     * If sharpening, add this vector on
+     * 
+     * @param {boolean} smooth If true, smooth.  If false, sharpen
+     */
+    this.laplacianSmoothSharpen = function(smooth) {
+        // TODO: Fill this in
+
+        this.needsDisplayUpdate = true;
+    }
+
+    /** Apply some creative per-vertex warp */
+    this.warp = function() {
+        // TODO: Fill this in
+
+        this.needsDisplayUpdate = true;
+    }
+
+
+    /////////////////////////////////////////////////////////////
+    ////                  TOPOLOGICAL TASKS                 /////
+    /////////////////////////////////////////////////////////////
+    /**
+     * Return a list of boundary cycles
+     * 
+     * @returns {list} A list of cycles, each of which is
+     *                 its own list of HEdge objects corresponding
+     *                 to a unique cycle
+     */
+    this.getBoundaryCycles = function() {
+        let cycles = [];
+        // TODO: Fill this in (hint: Add a variable to an edge which
+        // stores whether this edge has been checked yet)
+
+        return cycles;
+    }
+
+    /**
+     * Compute the genus of this mesh if it is watertight.
+     * If it is not watertight, return -1
+     * 
+     * @returns {int} genus if watertight, or -1 if not
+     */
+    this.getGenus = function() {
+        let genus = -1;
+        // TODO: Fill this in (hint: there are two half edges for every edge!)
+
+        return genus;
+
+    }
+
+    /**
+     * Fill in the boundary cycles with triangles.  The mesh
+     * should be watertight at the end
+     */
+    this.fillHoles = function() {
+        // TODO: Fill this in
 
         this.needsDisplayUpdate = true;
     }
