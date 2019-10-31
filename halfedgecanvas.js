@@ -192,7 +192,7 @@ function HalfEdgeCanvas(glcanvas, shadersrelpath) {
 
     let geomMenu = gui.addFolder("Geometric Tasks");
     glcanvas.inflationFac = 0.1;
-    function doInflateDeflate() {
+    glcanvas.inflateDeflate = function() {
         glcanvas.mesh.inflateDeflate(glcanvas.inflationFac);
         requestAnimFrame(glcanvas.repaint);
     }
@@ -205,7 +205,7 @@ function HalfEdgeCanvas(glcanvas, shadersrelpath) {
         requestAnimFrame(glcanvas.repaint);
     }
     geomMenu.add(glcanvas, 'inflationFac', -1, 1);
-    geomMenu.add(glcanvas.mesh, 'inflateDeflate').onChange(doInflateDeflate);
+    geomMenu.add(glcanvas, 'inflateDeflate');
     geomMenu.add(glcanvas, 'laplacianSmooth');
     geomMenu.add(glcanvas, 'laplacianSharpen');
 
@@ -214,6 +214,31 @@ function HalfEdgeCanvas(glcanvas, shadersrelpath) {
     glcanvas.genus = -1;
     topoMenu.add(glcanvas, 'showBoundaries').onChange(simpleRepaint);
     topoMenu.add(glcanvas, 'genus').listen();
+    glcanvas.fillHoles = function() {
+        glcanvas.mesh.fillHoles();
+        requestAnimFrame(glcanvas.repaint);
+    }
+    topoMenu.add(glcanvas, 'fillHoles');
+
+    let creationMenu = gui.addFolder("Mesh Creation");
+    glcanvas.truncationFac = 0.5;
+    creationMenu.add(glcanvas, 'truncationFac', 0.01, 0.99);
+    glcanvas.truncate = function() {
+        glcanvas.mesh.truncate(glcanvas.truncationFac);
+        requestAnimFrame(glcanvas.repaint);
+    }
+    creationMenu.add(glcanvas, 'truncate');
+
+    glcanvas.subdivideLinear = function() {
+        glcanvas.mesh.subdivideLinear();
+        requestAnimFrame(glcanvas.repaint);
+    }
+    creationMenu.add(glcanvas, 'subdivideLinear');
+    glcanvas.subdivideLoop = function() {
+        glcanvas.mesh.subdivideLoop();
+        requestAnimFrame(glcanvas.repaint);
+    }
+    creationMenu.add(glcanvas, 'subdivideLoop');
 
     gui.add(glcanvas.mesh, 'saveOffFile').onChange(simpleRepaint);
 
