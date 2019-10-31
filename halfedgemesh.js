@@ -87,7 +87,7 @@ function HFace() {
     this.getNormal = function() {
         let normal = vec3.create();
         // TODO: Fill this in
-
+        
         return normal;
     }
 }
@@ -123,7 +123,6 @@ function HVertex(pos, color) {
             return [];
         }
         // TODO: Fill this in (this is very similar to getVertexNeighbors)
-
         return [];
     }
 
@@ -339,10 +338,6 @@ function HedgeMesh() {
      *                    If negative, the mesh will deflate.
      */
     this.inflateDeflate = function(fac) {
-        if (fac === undefined) { 
-            // Keep this here for some GUI weirdness
-            return;
-        }
         // TODO: Fill this in
 
         this.needsDisplayUpdate = true;
@@ -410,4 +405,40 @@ function HedgeMesh() {
 
         this.needsDisplayUpdate = true;
     }
+
+
+
+    /////////////////////////////////////////////////////////////
+    ////                MESH CREATION TASKS                 /////
+    /////////////////////////////////////////////////////////////
+    
+    /**
+     * Truncate the mesh by slicing off the tips of each vertex
+     * @param {float} fac The amount to go down each edge from the vertex
+     *                    (should be between 0 and 1)
+     */
+    this.truncate = function(fac) {
+        // TODO: Fill this in
+
+        this.needsDisplayUpdate = true;
+    }
+
+    /**
+     * Perform a linear subdivision of the mesh
+     */
+    this.subdivideLinear = function() {
+        // TODO: Fill this in
+
+        this.needsDisplayUpdate = true;
+    }
+
+    /** 
+     * Perform Loop subdivision on the mesh
+     */
+    this.subdivideLoop = function() {
+        // TODO: Fill this in
+
+        this.needsDisplayUpdate = true;
+    }
+
 }
