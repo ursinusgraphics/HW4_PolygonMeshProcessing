@@ -6,6 +6,7 @@
  */
 
 DRAW_OFFSET = 1.001; // Draw points at a slight multiplicative offset for debugging
+LINE_WIDTH = 4;
 
 function HalfEdgeCanvas(glcanvas, shadersrelpath) {
     BaseCanvas(glcanvas, shadersrelpath);
@@ -24,6 +25,7 @@ function HalfEdgeCanvas(glcanvas, shadersrelpath) {
     glcanvas.repaint = function() {
         glcanvas.gl.viewport(0, 0, glcanvas.gl.viewportWidth, glcanvas.gl.viewportHeight);
         glcanvas.gl.clear(glcanvas.gl.COLOR_BUFFER_BIT | glcanvas.gl.DEPTH_BUFFER_BIT);
+        glcanvas.gl.lineWidth(LINE_WIDTH);
 
         //NOTE: glcanvas has all options we need except
         //for "shaderToUse"
@@ -122,12 +124,11 @@ function HalfEdgeCanvas(glcanvas, shadersrelpath) {
             let cycles = glcanvas.mesh.getBoundaryCycles();
             for (let i = 0; i < cycles.length; i++) {
                 for (let j = 0; j < cycles[i].length; j++) {
-                    drawEdge(cycles[i][j], [0, 0.5, 1]);
+                    drawEdge(cycles[i][j], [0, 1, 0.5]);
                 }
             }
             glcanvas.genus = glcanvas.mesh.getGenus();
         }
-
         drawer.repaint(glcanvas.camera);
     }
 
