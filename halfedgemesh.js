@@ -130,7 +130,7 @@ function HVertex(pos, color) {
      * Compute the normal of this vertex as an area-weighted
      * average of the normals of the faces attached to this vertex
      * 
-     * @returns {float} The estimated normal
+     * @returns {vec3} The estimated normal
      */
     this.getNormal = function() {
         let normal = vec3.fromValues(1, 0, 0); // TODO: This is a dummy value
