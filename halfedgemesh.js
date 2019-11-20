@@ -353,10 +353,8 @@ function HedgeMesh() {
      * @param {boolean} smooth If true, smooth.  If false, sharpen
      */
     this.laplacianSmoothSharpen = function(smooth) {
-        // Loop through all the vertices in the mesh
-        for (vertex of this.vertices) {
-            // TODO: Fill this in
-        }
+        // TODO: Fill this in
+
         this.needsDisplayUpdate = true;
     }
 
