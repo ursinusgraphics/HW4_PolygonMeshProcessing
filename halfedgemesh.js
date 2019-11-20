@@ -338,8 +338,10 @@ function HedgeMesh() {
      *                    If negative, the mesh will deflate.
      */
     this.inflateDeflate = function(fac) {
-        // TODO: Fill this in
-
+        // Loop through all the vertices in the mesh
+        for (vertex of this.vertices) {
+            // TODO: Fill this in
+        }
         this.needsDisplayUpdate = true;
     }
 
@@ -351,8 +353,10 @@ function HedgeMesh() {
      * @param {boolean} smooth If true, smooth.  If false, sharpen
      */
     this.laplacianSmoothSharpen = function(smooth) {
-        // TODO: Fill this in
-
+        // Loop through all the vertices in the mesh
+        for (vertex of this.vertices) {
+            // TODO: Fill this in
+        }
         this.needsDisplayUpdate = true;
     }
 
