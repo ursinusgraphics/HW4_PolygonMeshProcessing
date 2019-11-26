@@ -5,11 +5,11 @@
 let vec3 = glMatrix.vec3;
 
 function HEdge() {
-    this.head = null; // Head vertex
-    this.face = null; // Left face
-    this.pair = null; // Half edge on opposite face
-    this.prev = null; // Previous half edge in CCW order around left face
-    this.next = null; // Next half edge in CCW order around left face
+    this.head = null; // Head vertex (Type HVertex)
+    this.face = null; // Left face (Type HFace)
+    this.pair = null; // Half edge on opposite face (Type HEdge)
+    this.prev = null; // Previous half edge in CCW order around left face (Type HEdge)
+    this.next = null; // Next half edge in CCW order around left face (Type HEdge)
 
     /**
      * Return a list of the two vertices attached to this edge,
@@ -30,7 +30,7 @@ function HEdge() {
 }
 
 function HFace() {
-    this.h = null; // Any HEdge on this face
+    this.h = null; // Any HEdge on this face (Type HEdge)
 
     /**
      * Get a list of half-edges involved with this face
@@ -93,9 +93,9 @@ function HFace() {
 }
 
 function HVertex(pos, color) {
-    this.pos = pos;
-    this.color = color;
-    this.h = null; // Any hedge on this vertex
+    this.pos = pos; // Position of this vertex (Type vec3)
+    this.color = color; // Color of this vertex (Type vec3)
+    this.h = null; // Any hedge on this vertex (Type Hedge)
 
     /**
      * Compute the vertices that are attached to this
