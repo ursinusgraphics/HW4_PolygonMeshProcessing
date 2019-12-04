@@ -30,7 +30,7 @@ function HalfEdgeCanvas(glcanvas, shadersrelpath) {
         //NOTE: glcanvas has all options we need except
         //for "shaderToUse"
         glcanvas.shaderToUse = glcanvas.shaders.blinnPhong;
-        glcanvas.light1 = {pos:glcanvas.camera.pos, color:[1, 1, 1]};
+        glcanvas.lights = [{pos:glcanvas.camera.pos, color:[1, 1, 1], atten:[1, 0, 0]}];
         glcanvas.mesh.render(glcanvas);
 
         let drawer = glcanvas.drawer;
