@@ -4,12 +4,17 @@
 
 let vec3 = glMatrix.vec3;
 
-function HEdge() {
-    this.head = null; // Head vertex (Type HVertex)
-    this.face = null; // Left face (Type HFace)
-    this.pair = null; // Half edge on opposite face (Type HEdge)
-    this.prev = null; // Previous half edge in CCW order around left face (Type HEdge)
-    this.next = null; // Next half edge in CCW order around left face (Type HEdge)
+class HEdge {
+    /**
+     * Constructor for a half-edge
+     */
+    constructor() {
+        this.head = null; // Head vertex (Type HVertex)
+        this.face = null; // Left face (Type HFace)
+        this.pair = null; // Half edge on opposite face (Type HEdge)
+        this.prev = null; // Previous half edge in CCW order around left face (Type HEdge)
+        this.next = null; // Next half edge in CCW order around left face (Type HEdge)
+    }
 
     /**
      * Return a list of the two vertices attached to this edge,
@@ -18,7 +23,7 @@ function HEdge() {
      * @returns {list} A 2-element list of HVertex objects corresponding
      *                  to vertices attached to this edge
      */
-    this.getVertices = function() {
+    getVertices() {
         let ret = [];
         if (!(this.head === null) && !(this.prev === null)) {
             if (!(this.prev.head === null)) {
@@ -29,16 +34,21 @@ function HEdge() {
     }
 }
 
-function HFace() {
-    this.h = null; // Any HEdge on this face (Type HEdge)
-
+class HFace {
+    /**
+     * Constructor for a half-edge face
+     */
+    constructor() {
+        this.h = null; // Any HEdge on this face (Type HEdge)
+    }
+    
     /**
      * Get a list of half-edges involved with this face
      * 
      * @returns {list} A list of HEdge objects corresponding
      *                 to edges at the boundary of this face
      */
-    this.getEdges = function() {
+    getEdges() {
         if (this.h === null) {
             return [];
         }
@@ -53,7 +63,7 @@ function HFace() {
      * @returns {list} A list of HVertex objects corresponding
      *                 to vertices on this face
      */
-    this.getVertices = function() {
+    getVertices() {
         if (this.h === null) {
             return [];
         }
@@ -71,7 +81,7 @@ function HFace() {
      * 
      * @returns {float} The area of this face
      */
-    this.getArea = function() {
+    getArea() {
         let area = 0.0;
         // TODO: Fill this in (you can use mini assignment 1 to help)
         // Remember, there are n-2 triangles in an n-gon
@@ -84,7 +94,7 @@ function HFace() {
      * 
      * @returns {vec3} The normal of this face
      */
-    this.getNormal = function() {
+    getNormal() {
         let normal = vec3.create();
         // TODO: Fill this in
         
@@ -92,10 +102,17 @@ function HFace() {
     }
 }
 
-function HVertex(pos, color) {
-    this.pos = pos; // Position of this vertex (Type vec3)
-    this.color = color; // Color of this vertex (Type vec3)
-    this.h = null; // Any hedge on this vertex (Type Hedge)
+class HVertex {
+    /**
+     * Constructor for a half-edge vertex
+     * @param {glMatrix.vec3} pos Position of this vertex
+     * @param {glMatrix.vec3} color Color of this vertex
+     */
+    constructor(pos, color) {
+        this.pos = pos; // Position of this vertex (Type vec3)
+        this.color = color; // Color of this vertex (Type vec3)
+        this.h = null; // Any hedge on this vertex (Type Hedge)
+    }
 
     /**
      * Compute the vertices that are attached to this
@@ -104,7 +121,7 @@ function HVertex(pos, color) {
      * @returns {list} List of HVertex objects corresponding
      *                 to the attached vertices
      */
-    this.getVertexNeighbors = function() {
+    getVertexNeighbors() {
         if (this.h === null) {
             return [];
         }
@@ -118,7 +135,7 @@ function HVertex(pos, color) {
      * @returns {list} A list of HFace objects corresponding
      *                  to the incident faces
      */
-    this.getAttachedFaces = function() {
+    getAttachedFaces() {
         if (this.h === null) {
             return [];
         }
@@ -132,7 +149,7 @@ function HVertex(pos, color) {
      * 
      * @returns {vec3} The estimated normal
      */
-    this.getNormal = function() {
+    getNormal() {
         let normal = vec3.fromValues(1, 0, 0); // TODO: This is a dummy value
         // TODO: Fill this in 
         // Hint: use this.getAttachedFaces(), face.getArea(), and face.getNormal() to help
@@ -142,13 +159,11 @@ function HVertex(pos, color) {
 }
 
 
-function HedgeMesh() {
-    PolyMesh(this); // Initialize common functions/variables
-    
+class HedgeMesh extends PolyMesh {
     /**
      * @returns {I} A NumTrisx3 Uint16Array of indices into the vertex array
      */
-    this.getTriangleIndices = function() {
+    getTriangleIndices() {
         let NumTris = 0;
         let allvs = [];
         for (let i = 0; i < this.faces.length; i++) {
@@ -178,7 +193,7 @@ function HedgeMesh() {
     /**
      * @returns {I} A NEdgesx2 Uint16Array of indices into the vertex array
      */
-    this.getEdgeIndices = function() {
+    getEdgeIndices() {
         let I = [];
         for (let i = 0; i < this.edges.length; i++) {
             let vs = this.edges[i].getVertices();
@@ -200,7 +215,7 @@ function HedgeMesh() {
      * 
      * @returns {HEdge} The constructed half edge
      */
-    this.addHalfEdge = function(v1, v2, face) {
+    addHalfEdge(v1, v2, face) {
         const hedge = new HEdge();
         hedge.head = v2; // Points to head vertex of edge
         hedge.face = face;
@@ -219,7 +234,7 @@ function HedgeMesh() {
      * a consistently oriented mesh with vertices specified 
      * in CCW order
      */
-    this.loadFileFromLines = function(lines) {
+    loadFileFromLines(lines) {
         // Step 1: Consistently orient faces using
         // the basic mesh structure and copy over the result
         const origMesh = new BasicMesh();
@@ -337,7 +352,7 @@ function HedgeMesh() {
      *                    If positive, the mesh will inflate.
      *                    If negative, the mesh will deflate.
      */
-    this.inflateDeflate = function(fac) {
+    inflateDeflate(fac) {
         // Loop through all the vertices in the mesh
         for (vertex of this.vertices) {
             // TODO: Fill this in
@@ -352,14 +367,14 @@ function HedgeMesh() {
      * 
      * @param {boolean} smooth If true, smooth.  If false, sharpen
      */
-    this.laplacianSmoothSharpen = function(smooth) {
+    laplacianSmoothSharpen(smooth) {
         // TODO: Fill this in
 
         this.needsDisplayUpdate = true;
     }
 
     /** Apply some creative per-vertex warp */
-    this.warp = function() {
+    warp() {
         // TODO: Fill this in
 
         this.needsDisplayUpdate = true;
@@ -376,7 +391,7 @@ function HedgeMesh() {
      *                 its own list of HEdge objects corresponding
      *                 to a unique cycle
      */
-    this.getBoundaryCycles = function() {
+    getBoundaryCycles() {
         let cycles = [];
         // TODO: Fill this in (hint: Add a variable to an edge which
         // stores whether this edge has been checked yet)
@@ -390,7 +405,7 @@ function HedgeMesh() {
      * 
      * @returns {int} genus if watertight, or -1 if not
      */
-    this.getGenus = function() {
+    getGenus() {
         let genus = -1;
         // TODO: Fill this in (hint: there are two half edges for every edge!)
 
@@ -402,7 +417,7 @@ function HedgeMesh() {
      * Fill in the boundary cycles with triangles.  The mesh
      * should be watertight at the end
      */
-    this.fillHoles = function() {
+    fillHoles() {
         // TODO: Fill this in
 
         this.needsDisplayUpdate = true;
@@ -419,7 +434,7 @@ function HedgeMesh() {
      * @param {float} fac The amount to go down each edge from the vertex
      *                    (should be between 0 and 1)
      */
-    this.truncate = function(fac) {
+    truncate(fac) {
         // TODO: Fill this in
 
         this.needsDisplayUpdate = true;
@@ -428,7 +443,7 @@ function HedgeMesh() {
     /**
      * Perform a linear subdivision of the mesh
      */
-    this.subdivideLinear = function() {
+    subdivideLinear() {
         // TODO: Fill this in
 
         this.needsDisplayUpdate = true;
@@ -437,10 +452,9 @@ function HedgeMesh() {
     /** 
      * Perform Loop subdivision on the mesh
      */
-    this.subdivideLoop = function() {
+    subdivideLoop() {
         // TODO: Fill this in
 
         this.needsDisplayUpdate = true;
     }
-
 }
