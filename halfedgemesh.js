@@ -322,7 +322,7 @@ class HedgeMesh extends PolyMesh {
         }
 
         // Step 5: Link boundary edges
-        for (key in boundaryEdges) {
+        for (let key in boundaryEdges) {
             let e = boundaryEdges[key];
             if (e.next === null) {
                 let e2 = boundaryEdges[e.head.ID];

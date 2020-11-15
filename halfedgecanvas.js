@@ -11,10 +11,14 @@ class HalfEdgeCanvas extends BaseCanvas {
     constructor(glcanvas, shadersrelpath, antialias) {
         super(glcanvas, shadersrelpath, antialias);
         this.mesh = new HedgeMesh();
-        this.camera = new MousePolarCamera(this.width, this.height);
+        this.camera = new MousePolarCamera(glcanvas.width, glcanvas.height);
         this.drawer = new SimpleDrawer(this.gl, this.shaders);
         this.faceDrawer = new BasicMesh();
         this.setupMenus();
+    }
+
+    centerCamera() {
+        this.camera.centerOnMesh(this.mesh);
     }
 
     /**
@@ -233,7 +237,6 @@ class HalfEdgeCanvas extends BaseCanvas {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.lineWidth(LINE_WIDTH);
 
-        
         this.lights = [{pos:this.camera.pos, color:[1, 1, 1], atten:[1, 0, 0]}];
         this.shaderToUse = this.shaders.blinnPhong;
         this.mesh.render(this);
@@ -261,9 +264,5 @@ class HalfEdgeCanvas extends BaseCanvas {
             this.genus = this.mesh.getGenus();
         }
         drawer.repaint(this.camera);
-    }
-
-    centerCamera() {
-        this.camera.centerOnMesh(this.mesh);
     }
 }
