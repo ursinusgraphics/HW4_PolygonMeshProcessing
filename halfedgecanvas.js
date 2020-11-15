@@ -12,7 +12,17 @@ class HalfEdgeCanvas extends BaseCanvas {
         super(glcanvas, shadersrelpath, antialias);
         this.mesh = new HedgeMesh();
         this.camera = new MousePolarCamera(glcanvas.width, glcanvas.height);
-        this.drawer = new SimpleDrawer(this.gl, this.shaders);
+        // Setup drawer object for debugging.  It is undefined until
+        // the pointColorShader is ready
+        let canvas = this;
+        if (!('shaderReady' in this.shaders.pointColorShader)) {
+            this.shaders.pointColorShader.then(function() {
+                canvas.drawer = new SimpleDrawer(canvas.gl, canvas.shaders.pointColorShader);
+            })
+        }
+        else {
+            this.drawer = new SimpleDrawer(this.gl, this.shaders.pointColorShader);
+        }
         this.faceDrawer = new BasicMesh();
         this.setupMenus();
     }
@@ -147,6 +157,7 @@ class HalfEdgeCanvas extends BaseCanvas {
             color = [1, 0, 1];
         }
         let vs = edge.getVertices();
+        let offset = DRAW_OFFSET;
         for (let k = 0; k < 2; k++) {
             if (k == 0) {
                 offset = DRAW_OFFSET;
@@ -227,9 +238,15 @@ class HalfEdgeCanvas extends BaseCanvas {
      */
     repaint() {
         let canvas = this;
+        let drawer = this.drawer;
         if (!('shaderReady' in this.shaders.blinnPhong)) {
             // Wait until the promise has resolved, then draw again
             this.shaders.blinnPhong.then(canvas.repaint.bind(canvas));
+            return;
+        }
+        if (!('shaderReady' in this.shaders.pointColorShader)) {
+            // Wait until the promise has resolved, then draw again
+            this.shaders.pointColorShader.then(canvas.repaint.bind(canvas));
             return;
         }
         let gl = this.gl;
@@ -241,7 +258,7 @@ class HalfEdgeCanvas extends BaseCanvas {
         this.shaderToUse = this.shaders.blinnPhong;
         this.mesh.render(this);
 
-        let drawer = this.drawer;
+        
         drawer.reset();
         this.drawVertexTraversals();
 
