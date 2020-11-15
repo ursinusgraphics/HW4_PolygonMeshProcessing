@@ -150,7 +150,10 @@ class HVertex {
      * @returns {vec3} The estimated normal
      */
     getNormal() {
-        let normal = vec3.fromValues(1, 0, 0); // TODO: This is a dummy value
+        // TODO: This is a dummy value that makes all normals (1, 0, 0)
+        // just so something shows up.  You should actually initialize it to (0, 0, 0)
+        // and accumulate neighboring face normals in a loop for your average
+        let normal = vec3.fromValues(1, 0, 0); 
         // TODO: Fill this in 
         // Hint: use this.getAttachedFaces(), face.getArea(), and face.getNormal() to help
 
@@ -354,7 +357,7 @@ class HedgeMesh extends PolyMesh {
      */
     inflateDeflate(fac) {
         // Loop through all the vertices in the mesh
-        for (vertex of this.vertices) {
+        for (let vertex of this.vertices) {
             // TODO: Fill this in
         }
         this.needsDisplayUpdate = true;
