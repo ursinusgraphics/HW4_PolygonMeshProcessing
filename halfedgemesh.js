@@ -4,6 +4,10 @@
 
 let vec3 = glMatrix.vec3;
 
+///////////////////////////////////////////////////
+//                 MESH COMPONENTS               //
+///////////////////////////////////////////////////
+
 class HEdge {
     /**
      * Constructor for a half-edge
@@ -106,9 +110,13 @@ class HVertex {
     /**
      * Constructor for a half-edge vertex
      * @param {glMatrix.vec3} pos Position of this vertex
-     * @param {glMatrix.vec3} color Color of this vertex
+     * @param {glMatrix.vec3} color Color of this vertex.
+     *                              If unspecified, it defaults to gray
      */
     constructor(pos, color) {
+        if (color === undefined) {
+            color = [0.5, 0.5, 0.5];
+        }
         this.pos = pos; // Position of this vertex (Type vec3)
         this.color = color; // Color of this vertex (Type vec3)
         this.h = null; // Any hedge on this vertex (Type Hedge)
@@ -161,10 +169,50 @@ class HVertex {
     }
 }
 
+///////////////////////////////////////////////////
+//               HELPER FUNCTIONS                //
+///////////////////////////////////////////////////
+
+/**
+ * Make two new hedge objects which are linked
+ */
+function makeHedgePair() {
+    const h1 = new HEdge();
+    const h2 = new HEdge();
+    h1.pair = h2;
+    h2.pair = h1;
+    return {'h1':h1, 'h2':h2};
+}
+
+/**
+ * Make the next pointer of h1 h2 and the previous
+ * pointer of h2 h1
+ * @param {HEdge} h1 first edge 
+ * @param {Hedge} h2 next edge
+ */
+function makeNextPrev(h1, h2) {
+    h1.next = h2;
+    h2.prev = h1;
+}
+
+/**
+ * Link two half-edges together
+ * @param {HEdge} h1 first edge 
+ * @param {Hedge} h2 next edge
+ */
+function linkEdges(h1, h2) {
+    h1.pair = h2;
+    h2.pair = h1;
+}
+
+
+///////////////////////////////////////////////////
+//               MAIN MESH CLASS                 //
+///////////////////////////////////////////////////
 
 class HedgeMesh extends PolyMesh {
     /**
-     * @returns {I} A NumTrisx3 Uint16Array of indices into the vertex array
+     * @returns {I} A NumTrisx3 Uint32Array of indices into the vertex array
      */
     getTriangleIndices() {
         let NumTris = 0;
@@ -176,7 +224,7 @@ class HedgeMesh extends PolyMesh {
             }));
             NumTris += vsi.length - 2;
         }
-        let I = new Uint16Array(NumTris*3);
+        let I = new Uint32Array(NumTris*3);
         let i = 0;
         let faceIdx = 0;
         //Now copy over the triangle indices
@@ -194,7 +242,7 @@ class HedgeMesh extends PolyMesh {
     }
 
     /**
-     * @returns {I} A NEdgesx2 Uint16Array of indices into the vertex array
+     * @returns {I} A NEdgesx2 Uint32Array of indices into the vertex array
      */
     getEdgeIndices() {
         let I = [];
@@ -204,7 +252,7 @@ class HedgeMesh extends PolyMesh {
                 I.push(vs[k].ID);
             }
         }
-        return new Uint16Array(I);
+        return new Uint32Array(I);
     }
 
     /**
@@ -334,6 +382,14 @@ class HedgeMesh extends PolyMesh {
             }
         }
 
+        // Step 6: Number faces and edges to help with quick removal
+        for (let i = 0; i < this.edges.length; i++) {
+            this.edges[i].ID = i;
+        }
+        for (let i = 0; i < this.faces.length; i++) {
+            this.faces[i].ID = i;
+        }
+
         console.log("Initialized half edge mesh with " + 
                     this.vertices.length + " vertices, " + 
                     this.edges.length + " half edges, " + 
@@ -376,13 +432,6 @@ class HedgeMesh extends PolyMesh {
         this.needsDisplayUpdate = true;
     }
 
-    /** Apply some creative per-vertex warp */
-    warp() {
-        // TODO: Fill this in
-
-        this.needsDisplayUpdate = true;
-    }
-
 
     /////////////////////////////////////////////////////////////
     ////                  TOPOLOGICAL TASKS                 /////
@@ -416,48 +465,89 @@ class HedgeMesh extends PolyMesh {
 
     }
 
-    /**
-     * Fill in the boundary cycles with triangles.  The mesh
-     * should be watertight at the end
-     */
-    fillHoles() {
-        // TODO: Fill this in
-
-        this.needsDisplayUpdate = true;
-    }
-
-
 
     /////////////////////////////////////////////////////////////
     ////                MESH CREATION TASKS                 /////
     /////////////////////////////////////////////////////////////
     
     /**
+     * An simple method to show how to make a half-edge mesh with
+     * everything linked together properly
+     */
+    makeTriangle() {
+        let mesh = new HedgeMesh();
+        let v1 = new HVertex(vec3.fromValues(0, 0, 0));
+        let v2 = new HVertex(vec3.fromValues(1, 0, 0));
+        let v3 = new HVertex(vec3.fromValues(0, 1, 0));
+        mesh.vertices = [v1, v2, v3];
+        for (let k = 0; k < 6; k++) {
+            mesh.edges.push(new HEdge());
+        }
+        let f = new HFace();
+        f.h = mesh.edges[0];
+        mesh.faces = [f];
+        for (let k = 0; k < 3; k++) {
+            mesh.vertices[k].h = mesh.edges[k];
+            mesh.edges[k].head = mesh.vertices[(k+1)%3];
+            mesh.edges[k+3].head = mesh.vertices[k];
+            mesh.edges[k].face = f;
+            makeNextPrev(mesh.edges[k], mesh.edges[(k+1)%3]);
+            makeNextPrev(mesh.edges[3+(k+1)%3], mesh.edges[3+k]);
+            linkEdges(mesh.edges[k], mesh.edges[k+3]);
+        }
+        mesh.needsDisplayUpdate = true;
+        return mesh;
+    }
+
+    /**
+     * Create a surface of revolution
+     * @param {list} points A list of [x, y] points on the original curve
+     * @param {int} NAngles Number of angles by which to rotate the original points
+     */
+    makeSurfaceOfRevolution(points, NAngles) {
+        let mesh = new HedgeMesh();
+        // TODO: Fill this in
+        mesh.needsDisplayUpdate = true;
+        return mesh;
+    }
+
+    /**
      * Truncate the mesh by slicing off the tips of each vertex
      * @param {float} fac The amount to go down each edge from the vertex
      *                    (should be between 0 and 1)
      */
     truncate(fac) {
+        let mesh = new HedgeMesh();
         // TODO: Fill this in
-
-        this.needsDisplayUpdate = true;
+        mesh.needsDisplayUpdate = true;
+        return mesh;
     }
 
     /**
-     * Perform a linear subdivision of the mesh
+     * Perform a purely topological subdivision, assuming a triangle mesh
+     */
+    subdivideTopological() {
+        let mesh = new HedgeMesh();
+        // TODO: Fill this in
+        mesh.needsDisplayUpdate = true;
+        return mesh;
+    }
+
+    /**
+     * Perform a linear subdivision of a triangle mesh
      */
     subdivideLinear() {
+        let mesh = this.subdivideTopological();
         // TODO: Fill this in
-
-        this.needsDisplayUpdate = true;
+        return mesh;
     }
 
     /** 
      * Perform Loop subdivision on the mesh
      */
     subdivideLoop() {
+        let mesh = this.subdivideTopological();
         // TODO: Fill this in
-
-        this.needsDisplayUpdate = true;
+        return mesh;
     }
 }

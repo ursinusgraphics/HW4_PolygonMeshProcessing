@@ -3,13 +3,20 @@ LINE_WIDTH = 4;
 
 class HalfEdgeCanvas extends BaseCanvas {
     /**
+     * @param {SOREditor} sorEditor Surface of revolution editor
      * @param {DOM Element} glcanvas Handle to HTML where the glcanvas resides
      * @param {string} shadersrelpath Path to the folder that contains the shaders,
      *                                relative to where the constructor is being called
+     * @param {DOM Element} sorSelector Handle to div where sor is being displayed
+     * @param {DOM Element} meshViewer Handle to div where mesh viewer is being displayed
      * @param {antialias} boolean Whether antialiasing is enabled (true by default)
      */
-    constructor(glcanvas, shadersrelpath, antialias) {
+    constructor(sorEditor, glcanvas, sorSelector, meshViewer, shadersrelpath, antialias) {
         super(glcanvas, shadersrelpath, antialias);
+        this.sorEditor = sorEditor;
+        this.sorSelector = sorSelector;
+        this.meshViewer = meshViewer;
+        glcanvas.addEventListener("contextmenu", function(e){ e.stopPropagation(); e.preventDefault(); return false; }); //Need this to disable the menu that pops up on right clicking
         this.mesh = new HedgeMesh();
         this.camera = new MousePolarCamera(glcanvas.width, glcanvas.height);
         // Setup drawer object for debugging.  It is undefined until
@@ -24,11 +31,32 @@ class HalfEdgeCanvas extends BaseCanvas {
             this.drawer = new SimpleDrawer(this.gl, this.shaders.pointColorShader);
         }
         this.faceDrawer = new BasicMesh();
+        this.bbox = new AABox3D(0, 1, 0, 1, 0, 1);
+        this.closeSOR();
         this.setupMenus();
     }
 
+    closeSOR() {
+        this.meshViewer.className = "active";
+        this.meshViewer.style.display="block";
+        this.meshViewer.active = true;
+        this.sorSelector.className = "";
+        this.sorSelector.style.display = "none";
+        this.sorSelector.active = false;
+    }
+
+    selectSOR() {
+        this.meshViewer.className = "";
+        this.meshViewer.style.display="none";
+        this.meshViewer.active = true;
+        this.sorSelector.className = "active";
+        this.sorSelector.style.display = "block";
+        this.sorSelector.active = false;
+    }
+
     centerCamera() {
-        this.camera.centerOnMesh(this.mesh);
+        this.bbox = this.mesh.getBBox();
+        this.camera.centerOnBBox(this.bbox);
     }
 
     /**
@@ -101,43 +129,63 @@ class HalfEdgeCanvas extends BaseCanvas {
             canvas.mesh.laplacianSmoothSharpen(false);
             simpleRepaint();
         }
-        this.warp = function() {
-            canvas.mesh.warp();
-            simpleRepaint();
-        }
         geomMenu.add(this, 'inflationFac', -1, 1);
         geomMenu.add(this, 'inflateDeflate');
         geomMenu.add(this, 'laplacianSmooth');
         geomMenu.add(this, 'laplacianSharpen');
-        geomMenu.add(this, 'warp');
     
         let topoMenu = gui.addFolder("Topological Tasks");
         this.showBoundaries = false;
         this.genus = -1;
         topoMenu.add(this, 'showBoundaries').onChange(simpleRepaint);
         topoMenu.add(this, 'genus').listen();
-        this.fillHoles = function() {
-            canvas.mesh.fillHoles();
-            simpleRepaint();
+        
+        function copyInMesh(mesh) {
+            canvas.mesh.vertices = mesh.vertices;
+            canvas.mesh.edges = mesh.edges;
+            canvas.mesh.faces = mesh.faces;
+            canvas.mesh.needsDisplayUpdate = true;
         }
-        topoMenu.add(this, 'fillHoles');
-    
         let creationMenu = gui.addFolder("Mesh Creation");
-        this.truncationFac = 0.5;
-        creationMenu.add(this, 'truncationFac', 0.01, 0.99);
-        this.truncate = function() {
-            canvas.mesh.truncate(this.truncationFac);
+        this.makeTriangle = function() {
+            copyInMesh(canvas.mesh.makeTriangle());
+            canvas.centerCamera();
             simpleRepaint();
         }
-        creationMenu.add(this, 'truncate');
-    
+        creationMenu.add(this, 'makeTriangle');
+        let sorMenu = creationMenu.addFolder("Surface of Revolution");
+        sorMenu.add(this, 'selectSOR');
+        sorMenu.add(this, 'closeSOR');
+        sorMenu.add(this.sorEditor, 'NAngles', 3, 200, 1);
+        this.createSOR = function() {
+            let points = canvas.sorEditor.points;
+            let NAngles = canvas.sorEditor.NAngles;
+            copyInMesh(canvas.mesh.makeSurfaceOfRevolution(points, NAngles));
+            canvas.closeSOR();
+            canvas.centerCamera();
+            simpleRepaint();
+        }
+        sorMenu.add(this, 'createSOR');
+        let truncateMenu = creationMenu.addFolder("Truncation");
+        this.truncationFac = 0.25;
+        truncateMenu.add(this, 'truncationFac', 0.01, 0.49);
+        this.truncate = function() {
+            copyInMesh(canvas.mesh.truncate(this.truncationFac));
+            simpleRepaint();
+        }
+        truncateMenu.add(this, 'truncate');
+        this.subdivideTopological = function() {
+            copyInMesh(canvas.mesh.subdivideTopological());
+            simpleRepaint();
+        }
+        creationMenu.add(this, 'subdivideTopological');
         this.subdivideLinear = function() {
-            canvas.mesh.subdivideLinear();
+            copyInMesh(canvas.mesh.subdivideLinear());
             simpleRepaint();
         }
         creationMenu.add(this, 'subdivideLinear');
         this.subdivideLoop = function() {
-            canvas.mesh.subdivideLoop();
+            copyInMesh(canvas.mesh.subdivideLoop());
             simpleRepaint();
         }
         creationMenu.add(this, 'subdivideLoop');
@@ -254,7 +302,26 @@ class HalfEdgeCanvas extends BaseCanvas {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.lineWidth(LINE_WIDTH);
 
-        this.lights = [{pos:this.camera.pos, color:[1, 1, 1], atten:[1, 0, 0]}];
+        this.lights = [];
+        let bbox = this.bbox;
+        let R = this.camera.right;
+        let U = this.camera.up;
+        let T = glMatrix.vec3.create();
+        glMatrix.vec3.cross(T, R, U);
+        let d = bbox.getDiagLength();
+        for (let x = -1; x <= 1; x+=2) {
+            for (let y = -1; y <= 1; y+=2) {
+                for (let z = -1; z <= 1; z+=2) {
+                    let pos = glMatrix.vec3.create();
+                    glMatrix.vec3.copy(pos, bbox.getCenter());
+                    glMatrix.vec3.scaleAndAdd(pos, pos, R, x*d);
+                    glMatrix.vec3.scaleAndAdd(pos, pos, U, y*d);
+                    glMatrix.vec3.scaleAndAdd(pos, pos, T, z*d);
+                    this.lights.push({pos:pos, color:[0.1, 0.1, 0.1], atten:[1, 0, 0]});
+                }
+            }
+        }
+        this.lights.push({pos:this.camera.pos, color:[1, 1, 1], atten:[1, 0, 0]});
         this.shaderToUse = this.shaders.blinnPhong;
         this.mesh.render(this);
 
