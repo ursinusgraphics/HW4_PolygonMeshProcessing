@@ -19,20 +19,30 @@
 <script src="ggslac/utils/simpledraw.js"></script>
 <script src="ggslac/viewers/basecanvas.js"></script>
 <script src="halfedgecanvas.js"></script>
+<script src="soreditor.js"></script>
 </head>
 
 <body>
-
-<table>
-<tr><td><h3>Mesh File</h3></td><td><input type = "file" id = "meshInput"></td></tr>
-</table>
-<canvas id="MainGLCanvas" style="border: none;" width="800" height="600"></canvas>
+<div id = "meshViewer">
+    <table>
+    <tr><td><h3>Mesh File</h3></td><td><input type = "file" id = "meshInput"></td></tr>
+    </table>
+    <canvas id="MainGLCanvas" style="border: none;" width="800" height="600"></canvas>
+</div>
+<div id = "sorSelector">
+    <h2>Surface of Revolution Selector</h2>
+    <h3>Left click to select point, right click to deselect last point</h3>
+    <canvas id="SORCanvas" style="border: solid;" width="800" height="600"></canvas>
+</div>
 
 
 <script>
+    let sorEditor = new SOREditor(document.getElementById("SORCanvas"));
     var glcanvas = document.getElementById("MainGLCanvas");
-    glcanvas.addEventListener("contextmenu", function(e){ e.stopPropagation(); e.preventDefault(); return false; }); //Need this to disable the menu that pops up on right clicking
-    let canvas = new HalfEdgeCanvas(glcanvas, "ggslac/shaders/");
+    let canvas = new HalfEdgeCanvas(sorEditor, glcanvas, 
+                                    document.getElementById("sorSelector"), 
+                                    document.getElementById("meshViewer"), 
+                                    "ggslac/shaders/");
 
     var meshInput = document.getElementById('meshInput');
     var result = document.getElementById('text');
