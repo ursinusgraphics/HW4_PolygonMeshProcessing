@@ -499,6 +499,18 @@ class HedgeMesh extends PolyMesh {
         return mesh;
     }
 
+
+    /**
+     * An method to show how to make a half-edge mesh of
+     * a tetrahedron with everything linked together properly
+     */
+    makeTetrahedron() {
+        let mesh = new HedgeMesh();
+        // TODO: Fill this in
+        mesh.needsDisplayUpdate = true;
+        return mesh;
+    }
+
     /**
      * Create a surface of revolution
      * @param {list} points A list of [x, y] points on the original curve

@@ -153,6 +153,12 @@ class HalfEdgeCanvas extends BaseCanvas {
             simpleRepaint();
         }
         creationMenu.add(this, 'makeTriangle');
+        this.makeTetrahedron = function() {
+            copyInMesh(canvas.mesh.makeTetrahedron());
+            canvas.centerCamera();
+            simpleRepaint();
+        }
+        creationMenu.add(this, 'makeTetrahedron');
         let sorMenu = creationMenu.addFolder("Surface of Revolution");
         sorMenu.add(this, 'selectSOR');
         sorMenu.add(this, 'closeSOR');
