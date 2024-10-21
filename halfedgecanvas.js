@@ -216,6 +216,25 @@ class HalfEdgeCanvas extends BaseCanvas {
         edgeCollapseMenu.add(this.edgeCollapseOpts, 'showEdge').onChange(simpleRepaint);
         edgeCollapseMenu.add(this.edgeCollapseOpts, 'collapseEdge');
 
+        let randomSimplificationMenu = remeshingMenu.addFolder("Random Simplification");
+        this.randomSimplificationOpts = {'frac':1};
+        this.randomSimplificationOpts.simplifyRandom = function() {
+            canvas.mesh.simplifyRandom(this.frac);
+            simpleRepaint();
+        }
+        randomSimplificationMenu.add(this.randomSimplificationOpts, 'frac').min(0).max(1);
+        randomSimplificationMenu.add(this.randomSimplificationOpts, 'simplifyRandom');
+
+
+        let quadricSimplificationMenu = remeshingMenu.addFolder("Quadric Simplification");
+        this.quadricSimplificationOpts = {'frac':1};
+        this.quadricSimplificationOpts.simplifyQuadric = function() {
+            canvas.mesh.simplifyQuadric(this.frac);
+            simpleRepaint();
+        }
+        quadricSimplificationMenu.add(this.quadricSimplificationOpts, 'frac').min(0).max(1);
+        quadricSimplificationMenu.add(this.quadricSimplificationOpts, 'simplifyQuadric');
+
         gui.add(this.mesh, 'saveOffFile').onChange(simpleRepaint);
         simpleRepaint();
     }

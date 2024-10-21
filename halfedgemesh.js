@@ -547,4 +547,39 @@ class HedgeMesh extends PolyMesh {
         // TODO: Fill this in
         return mesh;
     }
+
+
+    /////////////////////////////////////////////////////////////
+    ////                  REMESHING TASKS                   /////
+    /////////////////////////////////////////////////////////////
+
+    /**
+     * Perform an edge collapse on a triangle mesh
+     * @param {HEdge} e The edge to collapse
+     */
+    collapseEdge(e) {
+        // TODO: Finish this
+    }
+
+    /**
+     * Pick a random subset of edges to delete until the target is hit
+     * @param {float} percentage Fraction in [0, 1] of number of faces to keep
+     * where 1 is 100% of the faces and 0 is 0% of the faces
+     */
+    simplifyRandom(percentage) {
+        let targetFaces = Math.floor(percentage*this.faces.length);
+        // TODO: Finish this
+    }
+
+    /**
+     * Delete edges until the target is hit, picking edges that minimize the
+     * quadric objective function
+     * @param {float} percentage Fraction in [0, 1] of number of faces to keep
+     * where 1 is 100% of the faces and 0 is 0% of the faces
+     */
+    simplifyQuadric(percentage) {
+        let targetFaces = Math.floor(percentage*this.faces.length);
+        // TODO: Finish this
+    }
+
 }
