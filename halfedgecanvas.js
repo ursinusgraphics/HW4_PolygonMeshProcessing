@@ -196,6 +196,26 @@ class HalfEdgeCanvas extends BaseCanvas {
         }
         creationMenu.add(this, 'subdivideLoop');
     
+        let remeshingMenu = gui.addFolder("Remeshing");
+        let edgeCollapseMenu = remeshingMenu.addFolder("Edge Collapse");
+        this.edgeCollapseOpts = {'edgeIndex':0, 'showEdge':false};
+        this.edgeCollapseOpts.collapseEdge = function() {
+            canvas.mesh.collapseEdge(canvas.mesh.edges[this.edgeIndex]);
+            simpleRepaint();
+        }
+        edgeCollapseMenu.add(this.edgeCollapseOpts, 'edgeIndex').onChange(function(i) {
+            let maxi = canvas.mesh.edges.length-1;
+            if (i >= maxi) {
+                canvas.edgeCollapseOpts.edgeIndex = maxi;
+            }
+            if (i < 0) {
+                canvas.edgeCollapseOpts.edgeIndex = 0;
+            }
+            simpleRepaint();
+        });
+        edgeCollapseMenu.add(this.edgeCollapseOpts, 'showEdge').onChange(simpleRepaint);
+        edgeCollapseMenu.add(this.edgeCollapseOpts, 'collapseEdge');
+
         gui.add(this.mesh, 'saveOffFile').onChange(simpleRepaint);
         simpleRepaint();
     }
@@ -353,6 +373,12 @@ class HalfEdgeCanvas extends BaseCanvas {
             }
             this.genus = this.mesh.getGenus();
         }
+
+        // Code for showing selected edge for edge collapse
+        if (this.edgeCollapseOpts.showEdge) {
+            this.drawEdge(this.mesh.edges[this.edgeCollapseOpts.edgeIndex]);
+        }
+
         drawer.repaint(this.camera);
     }
 }

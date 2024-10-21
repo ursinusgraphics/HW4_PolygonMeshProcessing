@@ -471,41 +471,26 @@ class HedgeMesh extends PolyMesh {
     /////////////////////////////////////////////////////////////
     
     /**
-     * An simple method to show how to make a half-edge mesh with
-     * everything linked together properly
+     * Create a half-edge mesh of a triangle with everything 
+     * linked together properly
      */
     makeTriangle() {
         let mesh = new HedgeMesh();
-        let v1 = new HVertex(vec3.fromValues(0, 0, 0));
-        let v2 = new HVertex(vec3.fromValues(1, 0, 0));
-        let v3 = new HVertex(vec3.fromValues(0, 1, 0));
-        mesh.vertices = [v1, v2, v3];
-        for (let k = 0; k < 6; k++) {
-            mesh.edges.push(new HEdge());
-        }
-        let f = new HFace();
-        f.h = mesh.edges[0];
-        mesh.faces = [f];
-        for (let k = 0; k < 3; k++) {
-            mesh.vertices[k].h = mesh.edges[k];
-            mesh.edges[k].head = mesh.vertices[(k+1)%3];
-            mesh.edges[k+3].head = mesh.vertices[k];
-            mesh.edges[k].face = f;
-            makeNextPrev(mesh.edges[k], mesh.edges[(k+1)%3]);
-            makeNextPrev(mesh.edges[3+(k+1)%3], mesh.edges[3+k]);
-            linkEdges(mesh.edges[k], mesh.edges[k+3]);
-        }
+        
+        // TODO: Finish this (we'll fill this in in class)
+        // Fill in mesh.vertices, mesh.edges, and mesh.faces
+
         mesh.needsDisplayUpdate = true;
         return mesh;
     }
 
-
     /**
-     * An method to show how to make a half-edge mesh of
-     * a tetrahedron with everything linked together properly
+     * Create a half-edge mesh of a tetrahedron with everything 
+     * linked together properly
      */
     makeTetrahedron() {
         let mesh = new HedgeMesh();
+        
         // TODO: Fill this in
         mesh.needsDisplayUpdate = true;
         return mesh;
