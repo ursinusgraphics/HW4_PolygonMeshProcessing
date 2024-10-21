@@ -562,6 +562,14 @@ class HedgeMesh extends PolyMesh {
     }
 
     /**
+     * Perform an edge flip on a triangle mesh
+     * @param {HEdge} e The edge to flip
+     */
+    flipEdge(e) {
+        // TODO: Finish this
+    }
+
+    /**
      * Pick a random subset of edges to delete until the target is hit
      * @param {float} percentage Fraction in [0, 1] of number of faces to keep
      * where 1 is 100% of the faces and 0 is 0% of the faces

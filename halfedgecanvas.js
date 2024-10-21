@@ -197,6 +197,7 @@ class HalfEdgeCanvas extends BaseCanvas {
         creationMenu.add(this, 'subdivideLoop');
     
         let remeshingMenu = gui.addFolder("Remeshing");
+
         let edgeCollapseMenu = remeshingMenu.addFolder("Edge Collapse");
         this.edgeCollapseOpts = {'edgeIndex':0, 'showEdge':false};
         this.edgeCollapseOpts.collapseEdge = function() {
@@ -215,6 +216,26 @@ class HalfEdgeCanvas extends BaseCanvas {
         });
         edgeCollapseMenu.add(this.edgeCollapseOpts, 'showEdge').onChange(simpleRepaint);
         edgeCollapseMenu.add(this.edgeCollapseOpts, 'collapseEdge');
+
+        let edgeFlipMenu = remeshingMenu.addFolder("Edge Flip");
+        this.edgeFlipOpts = {'edgeIndex':0, 'showEdge':false};
+        this.edgeFlipOpts.flipEdge = function() {
+            canvas.mesh.flipEdge(canvas.mesh.edges[this.edgeIndex]);
+            simpleRepaint();
+        }
+        edgeFlipMenu.add(this.edgeFlipOpts, 'edgeIndex').onChange(function(i) {
+            let maxi = canvas.mesh.edges.length-1;
+            if (i >= maxi) {
+                canvas.edgeFlipOpts.edgeIndex = maxi;
+            }
+            if (i < 0) {
+                canvas.edgeFlipOpts.edgeIndex = 0;
+            }
+            simpleRepaint();
+        });
+        edgeFlipMenu.add(this.edgeFlipOpts, 'showEdge').onChange(simpleRepaint);
+        edgeFlipMenu.add(this.edgeFlipOpts, 'flipEdge');
+
 
         let randomSimplificationMenu = remeshingMenu.addFolder("Random Simplification");
         this.randomSimplificationOpts = {'frac':1};
@@ -396,6 +417,11 @@ class HalfEdgeCanvas extends BaseCanvas {
         // Code for showing selected edge for edge collapse
         if (this.edgeCollapseOpts.showEdge) {
             this.drawEdge(this.mesh.edges[this.edgeCollapseOpts.edgeIndex]);
+        }
+
+        // Code for showing selected edge for edge flip
+        if (this.edgeFlipOpts.showEdge) {
+            this.drawEdge(this.mesh.edges[this.edgeFlipOpts.edgeIndex]);
         }
 
         drawer.repaint(this.camera);
